@@ -1,4 +1,3 @@
-
 import numpy as np
 import data_loader.read_history_count as read_history_count
 import data_loader.read_euro2016info as read_euro2016info
@@ -86,7 +85,7 @@ if __name__=='__main__':
     #     min_samples_split=2, random_state=666)
     # scores = cross_val_score(score_model, train_X, train_y)
     # print('cross validation score:%.4f' % scores.mean())
-    score_model = XGBClassifier()
+    score_model = XGBClassifier(n_estimators=250)
     # The mean square error
     score_model.fit(train_X, train_y)
     print('trainset mean square error: %.2f' % np.mean((score_model.predict(train_X) - train_y) ** 2))

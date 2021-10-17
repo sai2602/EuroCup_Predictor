@@ -1,10 +1,11 @@
-
 import numpy as np
 import data_loader.read_history_count as read_history_count
 import data_loader.read_euro2016info as read_euro2016info
 
+
 def points_count(vs_list, result):
-	## points count
+
+    # points count
     nation_point_goal_dict = {}
     for i in range(len(result)):
         print(vs_list[i],result[i])
@@ -68,7 +69,7 @@ if __name__=='__main__':
     print('start training...')
     # score_model = RandomForestClassifier(n_estimators=50, max_depth=None,
     #     min_samples_split=2, random_state=666)
-    score_model = XGBClassifier()
+    score_model = XGBClassifier(n_estimators=250)
     # scores = cross_val_score(score_model, train_X, train_y)
     # print('cross validation score:%.4f' % scores.mean())
     # The mean square error

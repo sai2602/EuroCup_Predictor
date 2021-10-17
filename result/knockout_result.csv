@@ -1,0 +1,15 @@
+16,romania,ukraine,-1
+16,spain,ireland,1
+8,ukraine,spain,1
+16,slovakia,portugal,1
+16,italy,italy,1
+8,slovakia,italy,1
+4,ukraine,slovakia,1
+16,germany,belgium,1
+16,czechia,czechia,1
+8,germany,czechia,2
+16,france,poland,2
+16,england,austria,1
+8,france,england,2
+4,germany,france,-1
+2,ukraine,france,-1
