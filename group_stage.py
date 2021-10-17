@@ -50,8 +50,9 @@ def eurocup24promotion(group_sorted_dict, promoted_file_path):
         cnt+=1
     promoted_file.close()
 
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.model_selection import cross_val_score
+
+from sklearn.metrics import mean_squared_log_error
+from sklearn.preprocessing import minmax_scale
 from xgboost import XGBClassifier
     
 if __name__=='__main__':
@@ -62,19 +63,20 @@ if __name__=='__main__':
     print('loading training data...')
     history_path = './data/rawdata_elo.txt'
     nation_record_dict = read_history_count.nation_record_count(history_path)
-    train_X,train_y = read_history_count.read_train(history_path,False)
+    train_X, train_Y = read_history_count.read_train(history_path, False)
     train_X = np.array(train_X)
-    train_y = np.array(train_y)
+    train_Y = np.array(train_Y)
     # train
     print('start training...')
     # score_model = RandomForestClassifier(n_estimators=50, max_depth=None,
     #     min_samples_split=2, random_state=666)
-    score_model = XGBClassifier(n_estimators=250)
-    # scores = cross_val_score(score_model, train_X, train_y)
-    # print('cross validation score:%.4f' % scores.mean())
-    # The mean square error
-    score_model.fit(train_X, train_y)
-    print("trainset mean square error: %.2f" % np.mean((score_model.predict(train_X) - train_y) ** 2))
+    score_model = XGBClassifier(n_estimators=250, max_depth=7)
+
+    # The mean log error
+    score_model.fit(train_X, train_Y)
+    Y_true = minmax_scale(train_Y, feature_range=(0, 1))
+    Y_pred = minmax_scale(score_model.predict(train_X), feature_range=(0, 1))
+    print("trainset mean log error: %.5f" % mean_squared_log_error(Y_true, Y_pred))
 
     ## predict
     # load prediction data
@@ -93,7 +95,7 @@ if __name__=='__main__':
                 nation2_record = read_history_count.get_nation1_record(nation_record_dict, nation2)
                 elo1 = nation_info_dict[nation1]['elo']
                 elo2 = nation_info_dict[nation2]['elo']
-                vec = [elo1,elo2]
+                vec = [elo1, elo2]
                 vec.extend(nation1_record)
                 vec.extend(nation2_record)
                 # save all samples
