@@ -1,9 +1,3 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Wed Jun 08 15:56:54 2016
-
-@author: hankai
-"""
 
 def nation_record_count(path):
     nation_record_dict = {}

@@ -1,9 +1,3 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Wed Jun 08 15:27:53 2016
-
-@author: hankai
-"""
 
 import numpy as np
 import data_loader.read_history_count as read_history_count
@@ -85,7 +79,7 @@ if __name__=='__main__':
     # load prediction data
     print('loading prediction data...')
     euro2016_path = './data/euro2016.csv'
-    nation_info_dict,group_nation_dict = read_euro2016info.read_euro2016(euro2016_path)
+    nation_info_dict, group_nation_dict = read_euro2016info.read_euro2016(euro2016_path)
     test_X = []
     vs_list = []
     for g in group_nation_dict.keys():
@@ -93,9 +87,9 @@ if __name__=='__main__':
             for j in range(i+1,4):
                 nation1 = group_nation_dict[g][i]
                 nation2 = group_nation_dict[g][j]
-                vs_list.append((nation1,nation2))
-                nation1_record = read_history_count.get_nation1_record(nation_record_dict,nation1)
-                nation2_record = read_history_count.get_nation1_record(nation_record_dict,nation2)
+                vs_list.append((nation1, nation2))
+                nation1_record = read_history_count.get_nation1_record(nation_record_dict, nation1)
+                nation2_record = read_history_count.get_nation1_record(nation_record_dict, nation2)
                 elo1 = nation_info_dict[nation1]['elo']
                 elo2 = nation_info_dict[nation2]['elo']
                 vec = [elo1,elo2]
