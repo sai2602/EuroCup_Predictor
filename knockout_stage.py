@@ -2,6 +2,11 @@ import numpy as np
 import data_loader.read_history_count as read_history_count
 import data_loader.read_euro2016info as read_euro2016info
 from math import floor
+from data_loader.Model_Selector import Model_Selector
+from sklearn.metrics import mean_squared_log_error
+from sklearn.preprocessing import minmax_scale
+from xgboost import XGBClassifier
+from sklearn.ensemble import RandomForestClassifier
 
 all_best3rd = ['abcd','abce','abcf','abde','abdf','abef','acde','acdf','acef',
                'adef','bcde','bcdf','bcef','bdef','cdef']
@@ -72,14 +77,12 @@ def predict_winner(low, high, circle):
 
 
 if __name__ == '__main__':
-    from sklearn.metrics import mean_squared_log_error
-    from sklearn.preprocessing import minmax_scale
-    from xgboost import XGBClassifier
 
     # train
     # load training data
     print('loading training data...')
     history_path = './data/rawdata_elo.txt'
+    model_info_path = './data/model_selector.txt'
     nation_record_dict = read_history_count.nation_record_count(history_path)
     train_X, train_Y = read_history_count.read_train(history_path, True)
     train_X = np.array(train_X)
@@ -87,7 +90,13 @@ if __name__ == '__main__':
     # train
     print('start training...')
 
-    score_model = XGBClassifier(n_estimators=250, max_depth=7)
+    model_details = Model_Selector(model_info_path)
+    if model_details[0] == "XGB":
+        score_model = XGBClassifier(n_estimators=int(model_details[1]), max_depth=int(model_details[2]))
+    elif model_details[0] == "RFC":
+        score_model = RandomForestClassifier(n_estimators=int(model_details[1]), max_depth=int(model_details[2]))
+    else:
+        raise AssertionError("Wrong model selected!!")
 
     score_model.fit(train_X, train_Y)
     Y_true = minmax_scale(train_Y, feature_range=(0, 1))
