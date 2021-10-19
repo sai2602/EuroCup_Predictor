@@ -1,6 +1,11 @@
 import numpy as np
 import data_loader.read_history_count as read_history_count
 import data_loader.read_euro2016info as read_euro2016info
+from sklearn.metrics import mean_squared_log_error
+from sklearn.preprocessing import minmax_scale
+from sklearn.ensemble import RandomForestClassifier
+from xgboost import XGBClassifier
+from data_loader.Model_Selector import Model_Selector
 
 
 def points_count(vs_list, result):
@@ -8,69 +13,74 @@ def points_count(vs_list, result):
     # points count
     nation_point_goal_dict = {}
     for i in range(len(result)):
-        print(vs_list[i],result[i])
+        print(vs_list[i], result[i])
         nation1 = vs_list[i][0]
         nation2 = vs_list[i][1]
-        nation_point_goal_dict.setdefault(nation1,[0,0])
-        nation_point_goal_dict.setdefault(nation2,[0,0])
-        nation_point_goal_dict[nation1][1]+=result[i]
-        nation_point_goal_dict[nation2][1]-=result[i]
-        if result[i]>0:
-            nation_point_goal_dict[nation1][0]+=3
-        elif result[i]<0:
-            nation_point_goal_dict[nation2][0]+=3
+        nation_point_goal_dict.setdefault(nation1, [0, 0])
+        nation_point_goal_dict.setdefault(nation2, [0, 0])
+        nation_point_goal_dict[nation1][1] += result[i]
+        nation_point_goal_dict[nation2][1] -= result[i]
+        if result[i] > 0:
+            nation_point_goal_dict[nation1][0] += 3
+        elif result[i] < 0:
+            nation_point_goal_dict[nation2][0] += 3
         else:
-            nation_point_goal_dict[nation1][0]+=1
-            nation_point_goal_dict[nation2][0]+=1
+            nation_point_goal_dict[nation1][0] += 1
+            nation_point_goal_dict[nation2][0] += 1
     # sort
-    nation_point_goal_dict=sorted(nation_point_goal_dict.items(), key=lambda d: d[1],reverse=True)
+    nation_point_goal_dict = sorted(nation_point_goal_dict.items(), key=lambda d: d[1], reverse=True)
     return nation_point_goal_dict
-	
+
+
 def eurocup24promotion(group_sorted_dict, promoted_file_path):
-    promoted_file=open('./result/promoted_nation.csv','w')
-    group3rd_dict={}
-	# top 2 teams in each group
+
+    promoted_file = open('./result/promoted_nation.csv', 'w')
+    group3rd_dict = {}
+    # top 2 teams in each group
     for group in group_sorted_dict.keys():
         cnt = 1
-        for (nation,point_goal) in group_sorted_dict[group]:
-            if cnt>3:
+        for (nation, point_goal) in group_sorted_dict[group]:
+            if cnt > 3:
                 continue
-            if cnt==3:
-                group3rd_dict.setdefault(group+str(cnt),(nation,point_goal))
+            if cnt == 3:
+                group3rd_dict.setdefault(group+str(cnt), (nation, point_goal))
                 continue
             promoted_file.write(group+str(cnt)+','+nation+','+str(point_goal[0])+','+str(point_goal[1])+'\n')
-            cnt+=1
-	# best 4 3rd team in all groups
-    group3rd_dict=sorted(group3rd_dict.items(), key=lambda d: d[1][1],reverse=True)
+            cnt += 1
+    # best 4 3rd team in all groups
+    group3rd_dict = sorted(group3rd_dict.items(), key=lambda d: d[1][1], reverse=True)
     cnt = 1
-    for (groupid,(nation,point_goal)) in group3rd_dict:        
-        if cnt>4:
+    for (groupid, (nation, point_goal)) in group3rd_dict:
+        if cnt > 4:
             break
         promoted_file.write(groupid+','+nation+','+str(point_goal[0])+','+str(point_goal[1])+'\n')
-        cnt+=1
+        cnt += 1
     promoted_file.close()
 
-
-from sklearn.metrics import mean_squared_log_error
-from sklearn.preprocessing import minmax_scale
-from xgboost import XGBClassifier
     
-if __name__=='__main__':
+if __name__ == '__main__':
 
-
-    ## train
+    # train
     # load training data
     print('loading training data...')
     history_path = './data/rawdata_elo.txt'
+    model_info_path = './data/model_selector.txt'
     nation_record_dict = read_history_count.nation_record_count(history_path)
     train_X, train_Y = read_history_count.read_train(history_path, False)
     train_X = np.array(train_X)
     train_Y = np.array(train_Y)
     # train
     print('start training...')
-    # score_model = RandomForestClassifier(n_estimators=50, max_depth=None,
-    #     min_samples_split=2, random_state=666)
-    score_model = XGBClassifier(n_estimators=250, max_depth=7)
+
+    model_details = Model_Selector(model_info_path)
+    if model_details[0] == "XGB":
+        print("Working with XGBoost classifier\n")
+        score_model = XGBClassifier(n_estimators=int(model_details[1]), max_depth=int(model_details[2]))
+    elif model_details[0] == "RFC":
+        print("Working with RandomForest classifier\n")
+        score_model = RandomForestClassifier(n_estimators=int(model_details[1]), max_depth=int(model_details[2]))
+    else:
+        raise AssertionError("Wrong model selected!!")
 
     # The mean log error
     score_model.fit(train_X, train_Y)
@@ -78,7 +88,7 @@ if __name__=='__main__':
     Y_pred = minmax_scale(score_model.predict(train_X), feature_range=(0, 1))
     print("trainset mean log error: %.5f" % mean_squared_log_error(Y_true, Y_pred))
 
-    ## predict
+    # predict
     # load prediction data
     print('loading prediction data...')
     euro2016_path = './data/euro2016.csv'
@@ -87,7 +97,7 @@ if __name__=='__main__':
     vs_list = []
     for g in group_nation_dict.keys():
         for i in range(4):
-            for j in range(i+1,4):
+            for j in range(i+1, 4):
                 nation1 = group_nation_dict[g][i]
                 nation2 = group_nation_dict[g][j]
                 vs_list.append((nation1, nation2))
@@ -107,19 +117,17 @@ if __name__=='__main__':
 
     # points count
     nation_point_goal_dict = points_count(vs_list,test_y)
-	
-    ## group analysis and write it to a file
+
+    # group analysis and write it to a file
     group_sorted_dict = {}
-    wf = open('./result/nation_point.csv','w')
-    for (nation,point_goal) in nation_point_goal_dict:
+    wf = open('./result/nation_point.csv', 'w')
+    for (nation, point_goal) in nation_point_goal_dict:
         group = nation_info_dict[nation]['group']
-        group_sorted_dict.setdefault(group,[])
-        group_sorted_dict[group].append((nation,point_goal))
+        group_sorted_dict.setdefault(group, [])
+        group_sorted_dict[group].append((nation, point_goal))
         wf.write(group+','+nation+','+str(point_goal[0])+','+str(point_goal[1])+'\n')
     wf.close()  
     
-    ## promote
-    promoted_file_path='./result/promoted_nation.csv'
+    # promote
+    promoted_file_path = './result/promoted_nation.csv'
     eurocup24promotion(group_sorted_dict, promoted_file_path)
-
-

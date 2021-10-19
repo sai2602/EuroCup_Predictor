@@ -66,9 +66,4 @@ def read_train(history_path, is_knockout):
         X.append(vec)
         y.append(yi)
     return X, y
-
-
-
-#history_path = './data/rawdata_elo.txt'
-#nation_record_dict=nation_record_count(history_path)
  
