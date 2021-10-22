@@ -85,6 +85,7 @@ def read_euro2020(path):
         team_details_dictionary[str_list[2]]['elo'] = float(str_list[3]) / 2000
     return team_details_dictionary, group_nation_dict
 
+
 def Model_Selector(model_info_path):
 
     handler = open(model_info_path, 'r')

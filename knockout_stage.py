@@ -4,7 +4,9 @@ from sklearn.metrics import mean_squared_log_error
 from sklearn.preprocessing import minmax_scale
 from xgboost import XGBClassifier
 from sklearn.ensemble import RandomForestClassifier
-from data_loader.helper_functions import read_euro2020, team_details_count,return_team_details,Model_Selector, read_training_data
+from data_loader.helper_functions import read_euro2020, team_details_count, return_team_details, Model_Selector, \
+    read_training_data
+
 
 Top_Best_Three_Teams_combination = ['abcd','abce','abcf','abde','abdf','abef','acde','acdf','acef',
                                     'adef','bcde','bcdf','bcef','bdef','cdef']
@@ -20,6 +22,7 @@ def get_match_winner(score_model, team1, team2):
     vec.extend(nation2_record)
     score = score_model.predict(np.array(vec).reshape(1, -1))
     return score
+
 
 def get_team_id_dictionary(sorted_path):
     id_nation_dictionary = {}
