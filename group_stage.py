@@ -3,11 +3,10 @@ from sklearn.metrics import mean_squared_log_error
 from sklearn.preprocessing import minmax_scale
 from sklearn.ensemble import RandomForestClassifier
 from xgboost import XGBClassifier
-from data_loader.helper_functions import Model_Selector
 from data_loader.helper_functions import read_euro2020, team_details_count,return_team_details,Model_Selector, read_training_data
 
 
-def groupstage_promotion(euro2020_groups_dictionary):
+def run_group_stage(euro2020_groups_dictionary):
     promoted_file = open('./Results_Directory/Group_Stage_Promoted_nations.csv', 'w')
     group3rd_best_teams_dictionary = {}
     # top 2 teams in each group
@@ -60,6 +59,7 @@ def total_points(team_list, result):
 if __name__ == '__main__':
     # train
     # load training data
+    print("=========== WELCOME TO GROUP STAGE OF EURO 2020 ===============")
     print('loading training data...')
     history_path = './Data_Directory/Raw_data.txt'
     model_info_path = './Data_Directory/Model_Selector.txt'
@@ -90,14 +90,14 @@ if __name__ == '__main__':
     # load prediction data
     print('Loading prediction data...')
     euro2020_path = './Data_Directory/Euro2020_Schedule.csv'
-    team_details_dictionary, group_nation_dict = read_euro2020(euro2020_path)
+    team_details_dictionary, group_nation_dictionary = read_euro2020(euro2020_path)
     test_X = []
     vs_list = []
-    for g in group_nation_dict.keys():
+    for g in group_nation_dictionary.keys():
         for i in range(4):
             for j in range(i+1, 4):
-                team1 = group_nation_dict[g][i]
-                team2 = group_nation_dict[g][j]
+                team1 = group_nation_dictionary[g][i]
+                team2 = group_nation_dictionary[g][j]
                 vs_list.append((team1, team2))
                 team1_details = return_team_details(nation_record_dict, team1)
                 team2_details = return_team_details(nation_record_dict, team2)
@@ -127,4 +127,4 @@ if __name__ == '__main__':
     wf.close()  
     
     # Run the group stage
-    groupstage_promotion(group_sorted_dict)
+    run_group_stage(group_sorted_dict)
