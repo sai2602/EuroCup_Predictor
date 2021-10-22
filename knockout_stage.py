@@ -1,6 +1,6 @@
 import numpy as np
 import data_loader.read_history_count as read_history_count
-import data_loader.read_euro2016info as read_euro2016info
+import data_loader.read_euro2020info as read_euro2020info
 from math import floor
 from data_loader.Model_Selector import Model_Selector
 from sklearn.metrics import mean_squared_log_error
@@ -8,8 +8,8 @@ from sklearn.preprocessing import minmax_scale
 from xgboost import XGBClassifier
 from sklearn.ensemble import RandomForestClassifier
 
-all_best3rd = ['abcd','abce','abcf','abde','abdf','abef','acde','acdf','acef',
-               'adef','bcde','bcdf','bcef','bdef','cdef']
+Top_Best_Three_Teams_combination = ['abcd','abce','abcf','abde','abdf','abef','acde','acdf','acef',
+                                    'adef','bcde','bcdf','bcef','bdef','cdef']
 
 
 def read_id_nation_dict(sorted_path):
@@ -25,7 +25,7 @@ def read_id_nation_dict(sorted_path):
     return id_nation_dict, four_best3rd
 
 
-def read_final16_nation_list(id_path, id_nation_dict, four_best3rd):
+def read_final16_nation_list(id_path, four_best3rd):
     final16_nation_list = []
     rf = open(id_path, 'r')
     for line in rf.readlines():
@@ -33,7 +33,7 @@ def read_final16_nation_list(id_path, id_nation_dict, four_best3rd):
         if len(str_list) < 2:
             final16_nation_list.append(line.strip())
         else:  # gourp 3rd
-            final16_nation_list.append(str_list[all_best3rd.index(four_best3rd)])
+            final16_nation_list.append(str_list[Top_Best_Three_Teams_combination.index(four_best3rd)])
     return final16_nation_list
 
 
@@ -105,11 +105,11 @@ if __name__ == '__main__':
 
     # predict
     # load prediction data
-    print('loading prediction data...')
+    print('Load the prediction data....')
     sorted_path = './result/promoted_nation.csv'  # promoted teams
     id_nation_dict, four_best3rd = read_id_nation_dict(sorted_path)
     id_path = './data/final16_id_list.txt'  # round16 vs list
-    final16_nation_list = read_final16_nation_list(id_path, id_nation_dict, four_best3rd)
+    final16_nation_list = read_final16_nation_list(id_path, four_best3rd)
     euro2016_path = './data/euro2016.csv'  # euro2016 info
     nation_info_dict, group_nation_dict = read_euro2016info.read_euro2016(euro2016_path)
 

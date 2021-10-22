@@ -1,76 +1,74 @@
 import numpy as np
-import data_loader.read_history_count as read_history_count
-import data_loader.read_euro2016info as read_euro2016info
 from sklearn.metrics import mean_squared_log_error
 from sklearn.preprocessing import minmax_scale
 from sklearn.ensemble import RandomForestClassifier
 from xgboost import XGBClassifier
-from data_loader.Model_Selector import Model_Selector
+from data_loader.helper_functions import Model_Selector
+from data_loader.helper_functions import read_euro2020, team_details_count,return_team_details,Model_Selector, read_training_data
 
 
-def points_count(vs_list, result):
-
-    # points count
-    nation_point_goal_dict = {}
-    for i in range(len(result)):
-        print(vs_list[i], result[i])
-        nation1 = vs_list[i][0]
-        nation2 = vs_list[i][1]
-        nation_point_goal_dict.setdefault(nation1, [0, 0])
-        nation_point_goal_dict.setdefault(nation2, [0, 0])
-        nation_point_goal_dict[nation1][1] += result[i]
-        nation_point_goal_dict[nation2][1] -= result[i]
-        if result[i] > 0:
-            nation_point_goal_dict[nation1][0] += 3
-        elif result[i] < 0:
-            nation_point_goal_dict[nation2][0] += 3
-        else:
-            nation_point_goal_dict[nation1][0] += 1
-            nation_point_goal_dict[nation2][0] += 1
-    # sort
-    nation_point_goal_dict = sorted(nation_point_goal_dict.items(), key=lambda d: d[1], reverse=True)
-    return nation_point_goal_dict
-
-
-def eurocup24promotion(group_sorted_dict, promoted_file_path):
-
-    promoted_file = open('./result/promoted_nation.csv', 'w')
-    group3rd_dict = {}
+def groupstage_promotion(euro2020_groups_dictionary):
+    promoted_file = open('./Results_Directory/Group_Stage_Promoted_nations.csv', 'w')
+    group3rd_best_teams_dictionary = {}
     # top 2 teams in each group
-    for group in group_sorted_dict.keys():
-        cnt = 1
-        for (nation, point_goal) in group_sorted_dict[group]:
-            if cnt > 3:
+    for group in euro2020_groups_dictionary.keys():
+        count = 1
+        for (team, point_and_goal) in euro2020_groups_dictionary[group]:
+            if count > 3:
                 continue
-            if cnt == 3:
-                group3rd_dict.setdefault(group+str(cnt), (nation, point_goal))
+            if count == 3:
+                group3rd_best_teams_dictionary.setdefault(group + str(count), (team, point_and_goal))
                 continue
-            promoted_file.write(group+str(cnt)+','+nation+','+str(point_goal[0])+','+str(point_goal[1])+'\n')
-            cnt += 1
+            promoted_file.write(
+                group + str(count) + ',' + team + ',' + str(point_and_goal[0]) + ',' + str(point_and_goal[1]) + '\n')
+            count += 1
     # best 4 3rd team in all groups
-    group3rd_dict = sorted(group3rd_dict.items(), key=lambda d: d[1][1], reverse=True)
-    cnt = 1
-    for (groupid, (nation, point_goal)) in group3rd_dict:
-        if cnt > 4:
+    group3rd_best_teams_dictionary = sorted(group3rd_best_teams_dictionary.items(), key=lambda d: d[1][1], reverse=True)
+    count = 1
+    for (group_name, (team, points_and_goal)) in group3rd_best_teams_dictionary:
+        if count > 4:
             break
-        promoted_file.write(groupid+','+nation+','+str(point_goal[0])+','+str(point_goal[1])+'\n')
-        cnt += 1
+        promoted_file.write(
+            group_name + ',' + team + ',' + str(points_and_goal[0]) + ',' + str(points_and_goal[1]) + '\n')
+        count += 1
     promoted_file.close()
 
-    
-if __name__ == '__main__':
 
+def total_points(team_list, result):
+    team_goal_point_dictionary = {}
+    for i in range(len(result)):
+        print(team_list[i], result[i])
+        team1 = team_list[i][0]
+        team2 = team_list[i][1]
+        team_goal_point_dictionary.setdefault(team1, [0, 0])
+        team_goal_point_dictionary.setdefault(team2, [0, 0])
+        team_goal_point_dictionary[team1][1] += result[i]
+        team_goal_point_dictionary[team2][1] -= result[i]
+        if result[i] > 0:
+            team_goal_point_dictionary[team1][0] += 3
+        elif result[i] < 0:
+            team_goal_point_dictionary[team2][0] += 3
+        else:
+            team_goal_point_dictionary[team1][0] += 1
+            team_goal_point_dictionary[team2][0] += 1
+    # sort
+    team_point_goal_dictionary = sorted(team_goal_point_dictionary.items(), key=lambda d: d[1], reverse=True)
+    return team_point_goal_dictionary
+
+
+
+if __name__ == '__main__':
     # train
     # load training data
     print('loading training data...')
-    history_path = './data/rawdata_elo.txt'
-    model_info_path = './data/model_selector.txt'
-    nation_record_dict = read_history_count.nation_record_count(history_path)
-    train_X, train_Y = read_history_count.read_train(history_path, False)
+    history_path = './Data_Directory/Raw_data.txt'
+    model_info_path = './Data_Directory/Model_Selector.txt'
+    nation_record_dict = team_details_count(history_path)
+    train_X, train_Y = read_training_data(history_path, False)
     train_X = np.array(train_X)
     train_Y = np.array(train_Y)
     # train
-    print('start training...')
+    print('Starting training with the training set...')
 
     model_details = Model_Selector(model_info_path)
     if model_details[0] == "XGB":
@@ -86,48 +84,47 @@ if __name__ == '__main__':
     score_model.fit(train_X, train_Y)
     Y_true = minmax_scale(train_Y, feature_range=(0, 1))
     Y_pred = minmax_scale(score_model.predict(train_X), feature_range=(0, 1))
-    print("trainset mean log error: %.5f" % mean_squared_log_error(Y_true, Y_pred))
+    print("training set mean log error: %.5f" % mean_squared_log_error(Y_true, Y_pred))
 
     # predict
     # load prediction data
-    print('loading prediction data...')
-    euro2016_path = './data/euro2016.csv'
-    nation_info_dict, group_nation_dict = read_euro2016info.read_euro2016(euro2016_path)
+    print('Loading prediction data...')
+    euro2020_path = './Data_Directory/Euro2020_Schedule.csv'
+    team_details_dictionary, group_nation_dict = read_euro2020(euro2020_path)
     test_X = []
     vs_list = []
     for g in group_nation_dict.keys():
         for i in range(4):
             for j in range(i+1, 4):
-                nation1 = group_nation_dict[g][i]
-                nation2 = group_nation_dict[g][j]
-                vs_list.append((nation1, nation2))
-                nation1_record = read_history_count.get_nation1_record(nation_record_dict, nation1)
-                nation2_record = read_history_count.get_nation1_record(nation_record_dict, nation2)
-                elo1 = nation_info_dict[nation1]['elo']
-                elo2 = nation_info_dict[nation2]['elo']
+                team1 = group_nation_dict[g][i]
+                team2 = group_nation_dict[g][j]
+                vs_list.append((team1, team2))
+                team1_details = return_team_details(nation_record_dict, team1)
+                team2_details = return_team_details(nation_record_dict, team2)
+                elo1 = team_details_dictionary[team1]['elo']
+                elo2 = team_details_dictionary[team2]['elo']
                 vec = [elo1, elo2]
-                vec.extend(nation1_record)
-                vec.extend(nation2_record)
+                vec.extend(team1_details)
+                vec.extend(team2_details)
                 # save all samples
                 test_X.append(vec)
     # predict
     test_X = np.array(test_X)
-    print('predicting results:')
+    print('Predicting Results:')
     test_y = score_model.predict(test_X)
 
     # points count
-    nation_point_goal_dict = points_count(vs_list,test_y)
+    nation_point_goal_dict = total_points(vs_list,test_y)
 
     # group analysis and write it to a file
     group_sorted_dict = {}
-    wf = open('./result/nation_point.csv', 'w')
-    for (nation, point_goal) in nation_point_goal_dict:
-        group = nation_info_dict[nation]['group']
+    wf = open('./Results_Directory/Group_Stage_Point_Table.csv', 'w')
+    for (team, points_and_goal) in nation_point_goal_dict:
+        group = team_details_dictionary[team]['group']
         group_sorted_dict.setdefault(group, [])
-        group_sorted_dict[group].append((nation, point_goal))
-        wf.write(group+','+nation+','+str(point_goal[0])+','+str(point_goal[1])+'\n')
+        group_sorted_dict[group].append((team, points_and_goal))
+        wf.write(group+','+team+','+str(points_and_goal[0])+','+str(points_and_goal[1])+'\n')
     wf.close()  
     
-    # promote
-    promoted_file_path = './result/promoted_nation.csv'
-    eurocup24promotion(group_sorted_dict, promoted_file_path)
+    # Run the group stage
+    groupstage_promotion(group_sorted_dict)
